@@ -9,6 +9,10 @@ env:
   IMAGE_NAME: ${{ github.repository }}
   GHCR: ghcr.io
 
+permissions:
+  contents: read                # allows checkout
+  packages: write               # allows pushing to GHCR
+
 jobs:
   build_and_push:
     name: Push Docker image to Docker Hub / ghcr
