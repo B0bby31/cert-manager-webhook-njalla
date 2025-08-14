@@ -8,18 +8,36 @@ cert-manager ACME DNS01 Webhook Solver for Njalla DNS
 
 ## Installing
 
-```bash
-kubectl apply -f https://raw.githubusercontent.com/kekkker/cert-manager-webhook-njalla/main/deploy/deployment.yaml
+There are two ways to install the [original way](https://github.com/kekkker/cert-manager-webhook-njalla) or using my [helm chart](https://github.com/B0bby31/Helm-Charts).
+
+## Quick Start using Helm
+
+To deploy this into your clusters, you start by adding my repo:
+
+```console
+$ helm repo add b0bby31 https://charts.plutode.com
+$ helm repo update
 ```
+
+You either edit the values.yaml or only specify the necessary values (email is not necessary, but it allows you to test the deployment):
+
+```console
+$ helm install njalla-webhook b0bby31/cert-manager-webhook-njalla -n cert-manager --set groupName="acme.YOURDOMAIN" --set njalla.token="YOURAPITOKEN" --set email="LETSENCRYPTEMAIL"
+```
+
+After that, you can run a test which will install a letsencrypt staging CA and check if it can create a cert for "acme.YOURDOMAIN":
+
+```console
+$ helm test njalla-webhook -n cert-manager
+```
+
+If that succeeds, you have a working njalla-webhook provider for cert-manager.
+
 ### Issuer/ClusterIssuer
 
-Create a secret for your Njalla Api token.
+Now, you can create a production ClusterIssuer.
 
-```bash
-kubectl create secret generic njalla-secrets -n cert-manager --from-literal=token=<NJALLA_API_TOKEN>
-```
-
-An example issuer:
+An example production issuer:
 
 ```yaml
 ---
@@ -36,33 +54,14 @@ spec:
     # Name of a secret used to store the ACME account private key
     privateKeySecretRef:
       name: letsencrypt-prod-njalla
-    # Enable the HTTP-01 challenge provider
+    # Enable the DNS-01 challenge provider
     solvers:
       - dns01:
           webhook:
-            groupName: acme.yourcompany.com
+            groupName: acme.YOURDOMAIN
             solverName: njalla
             config:
               apiKeySecretRef:
                 name: njalla-secrets
                 key: token
-```
-
-An example certificate:
-
-```yaml
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: example.org
-  namespace: default
-spec:
-  secretName: example.org-tls
-  issuerRef:
-    name: letsencrypt-prod-njalla
-    kind: ClusterIssuer
-  commonName: "*.example.org"
-  dnsNames:
-    - "*.example.org"
 ```
